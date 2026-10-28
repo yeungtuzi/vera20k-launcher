@@ -23,7 +23,7 @@ set -euo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
 root="${VERA20K_ROOT:-$(cd "$here/../vera20k" 2>/dev/null && pwd || true)}"
 tool="${VERA20K_MAP_TOOL:-$root/target/release/map-tool}"
-library="${VERA2K_LAUNCHER_LIBRARY:-$HOME/Library/Application Support/VERA20K-Maps}"
+library="${VERA20K_LAUNCHER_LIBRARY:-$HOME/Library/Application Support/VERA20K-Maps}"
 data_dir="$HOME/Library/Application Support/VERA20k"
 yr=""; ra2=""; mod=""
 

@@ -1,4 +1,4 @@
-# VERA2K Launcher
+# VERA20K Launcher
 
 A small macOS map launcher for [VERA20K](https://github.com/YuriPlanet/vera20k), the
 Rust rewrite of *Command & Conquer: Red Alert 2 — Yuri's Revenge*.
@@ -47,8 +47,8 @@ starts the game straight from the list.
 ## Quick start
 
 ```sh
-git clone https://github.com/yeungtuzi/vera2k-launcher.git
-cd vera2k-launcher
+git clone https://github.com/yeungtuzi/vera20k-launcher.git
+cd vera20k-launcher
 
 # 1. Build the map library from your installs (one time, re-run when they change)
 VERA20K_ROOT=/path/to/vera20k bash prepare_library.sh \
@@ -60,7 +60,7 @@ VERA20K_ROOT=/path/to/vera20k bash prepare_library.sh \
 VERA20K_ROOT=/path/to/vera20k bash build.sh
 ```
 
-`build.sh` installs `VERA2K Launcher.app` into `/Applications` (pass a directory to
+`build.sh` installs `VERA20K Launcher.app` into `/Applications` (pass a directory to
 change that). Without `VERA20K_ROOT` it looks for `../vera20k`.
 
 ## The map library

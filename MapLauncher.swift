@@ -143,7 +143,7 @@ final class Launcher: ObservableObject {
     /// Launcher-owned library, populated once so the window never has to read a
     /// TCC-protected folder (macOS blocks the first access in the kernel).
     private var libraryDir: String {
-        ProcessInfo.processInfo.environment["VERA2K_LAUNCHER_LIBRARY"]
+        ProcessInfo.processInfo.environment["VERA20K_LAUNCHER_LIBRARY"]
             ?? NSHomeDirectory() + "/Library/Application Support/VERA20K-Maps"
     }
     private var missionIni: String { libraryDir + "/meta/MISSIONMD.INI" }

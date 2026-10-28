@@ -1,0 +1,58 @@
+name: Build
+
+# The launcher is a thin SwiftUI shell: this job proves the scripts are valid,
+# the Swift compiles, and the app bundle is produced and correctly signed.
+# It does not need retail game data — `map-tool` is stubbed for the build, since
+# the app only records its path at build time.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: build (macos)
+    runs-on: macos-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Shell syntax
+        run: |
+          bash -n build.sh
+          bash -n prepare_library.sh
+
+      - name: Swift type-check
+        run: |
+          swiftc -typecheck -parse-as-library -target arm64-apple-macos13.0 MapLauncher.swift
+
+      - name: Stub map-tool
+        # `build.sh` requires the vera20k `map-tool` to exist so the app can
+        # record its path; the launcher itself does not link against it.
+        run: |
+          mkdir -p "$RUNNER_TEMP/vera20k/target/release"
+          printf '#!/bin/sh\nexit 0\n' > "$RUNNER_TEMP/vera20k/target/release/map-tool"
+          chmod +x "$RUNNER_TEMP/vera20k/target/release/map-tool"
+
+      - name: Build the app
+        env:
+          VERA20K_ROOT: ${{ runner.temp }}/vera20k
+        run: bash build.sh "$RUNNER_TEMP/out"
+
+      - name: Verify the bundle
+        run: |
+          app="$RUNNER_TEMP/out/VERA20K Launcher.app"
+          test -d "$app"
+          plutil -lint "$app/Contents/Info.plist"
+          codesign --verify --strict "$app"
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$app/Contents/Info.plist"
+          du -sh "$app"
+
+      - name: Upload app
+        uses: actions/upload-artifact@v4
+        with:
+          name: VERA20K-Launcher.app
+          path: ${{ runner.temp }}/out/VERA20K Launcher.app
+          if-no-files-found: error

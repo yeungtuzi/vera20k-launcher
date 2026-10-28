@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build and install the VERA2K Launcher app.
+# Build and install the VERA20K Launcher app.
 #
 # The launcher is a browser only: scanning, mission text, preview rendering and
 # the spawn.ini launch all run through `map-tool`, which lives in the vera20k
@@ -25,23 +25,23 @@ if [ ! -x "$tool" ]; then
   exit 1
 fi
 
-app="$out/VERA2K Launcher.app"
+app="$out/VERA20K Launcher.app"
 build="$here/build"
 mkdir -p "$build"
 
 swiftc -O -parse-as-library \
   -target arm64-apple-macos13.0 \
   "$here/MapLauncher.swift" \
-  -o "$build/VERA2KLauncher"
+  -o "$build/VERA20KLauncher"
 
 rm -rf "$app"
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
-cp "$build/VERA2KLauncher" "$app/Contents/MacOS/VERA2KLauncher"
+cp "$build/VERA20KLauncher" "$app/Contents/MacOS/VERA20KLauncher"
 
 if [ -f "$root/.github/release/icon.png" ]; then
   icon="$build/icon.png"
   python3 "$here/make_icon.py" "$root/.github/release/icon.png" "$icon"
-  iconset="$build/VERA2KLauncher.iconset"
+  iconset="$build/VERA20KLauncher.iconset"
   rm -rf "$iconset"
   mkdir -p "$iconset"
   for size in 16 32 128 256 512; do
@@ -58,10 +58,10 @@ cat > "$app/Contents/Info.plist" <<'PLIST'
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-  <key>CFBundleName</key><string>VERA2K Launcher</string>
-  <key>CFBundleDisplayName</key><string>VERA2K Launcher</string>
-  <key>CFBundleIdentifier</key><string>io.github.vera2k.launcher</string>
-  <key>CFBundleExecutable</key><string>VERA2KLauncher</string>
+  <key>CFBundleName</key><string>VERA20K Launcher</string>
+  <key>CFBundleDisplayName</key><string>VERA20K Launcher</string>
+  <key>CFBundleIdentifier</key><string>io.github.vera20k.launcher</string>
+  <key>CFBundleExecutable</key><string>VERA20KLauncher</string>
   <key>CFBundleIconFile</key><string>icon</string>
   <key>CFBundlePackageType</key><string>APPL</string>
   <key>CFBundleShortVersionString</key><string>0.1</string>
@@ -73,7 +73,7 @@ cat > "$app/Contents/Info.plist" <<'PLIST'
 PLIST
 
 # Record the resolved tool path so the first launch works without env vars.
-defaults write io.github.vera2k.launcher toolPath "$tool" 2>/dev/null || true
+defaults write io.github.vera20k.launcher toolPath "$tool" 2>/dev/null || true
 
 xattr -dr com.apple.quarantine "$app" 2>/dev/null || true
 codesign --force --deep --sign - "$app" 2>/dev/null
