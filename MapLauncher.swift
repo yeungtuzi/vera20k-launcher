@@ -161,6 +161,18 @@ final class Launcher: ObservableObject {
     private var ra2Csf: String { libraryDir + "/meta-ra2/ra2.csf" }
     private var previewDir: String { libraryDir + "/previews" }
 
+    /// Which asset root a launch should use. Official chapters run against the
+    /// plain base install; only mod maps get the overlay, because the overlay's
+    /// `ra2md.csf` replaces the official mission text.
+    private func assetRoot(for entry: MapEntry) -> String {
+        let overlay = libraryDir + "/base-mod"
+        let base = libraryDir + "/base"
+        if entry.source == "mod", FileManager.default.fileExists(atPath: overlay) {
+            return overlay
+        }
+        return base
+    }
+
     /// Cached radar render for a map. One file per map path, so a second visit
     /// is instant; the render itself costs a game launch.
     private func previewCachePath(for entry: MapEntry) -> String {
@@ -436,7 +448,8 @@ final class Launcher: ObservableObject {
         let out = previewCachePath(for: entry)
         generatingPreview = true
         status = "正在渲染预览（需要启动一次游戏，约 20-40 秒）…"
-        runTool(["radar-preview", entry.path, "--out", out, "--wait", "60"]) { [weak self] ok, text in
+        runTool(["radar-preview", entry.path, "--out", out, "--wait", "60",
+                 "--ra2-dir", assetRoot(for: entry)]) { [weak self] ok, text in
             guard let self else { return }
             self.generatingPreview = false
             if ok, let image = NSImage(contentsOfFile: out) {
@@ -473,6 +486,7 @@ final class Launcher: ObservableObject {
 
     private func start(mapPath: String, name: String) {
         var arguments = ["launch", mapPath, "--data-dir", dataDir]
+        if let entry = selected { arguments += ["--ra2-dir", assetRoot(for: entry)] }
         if fullscreen { arguments.append("--fullscreen") }
         runTool(arguments) { [weak self] ok, text in
             self?.status = ok ? "Started: \(name)" : "launch failed: \(text)"
