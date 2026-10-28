@@ -7,6 +7,11 @@ It browses **every campaign chapter (original Red Alert 2 and Yuri's Revenge) an
 any custom map**, shows the mission briefing, renders a real map preview, and
 starts the game straight from the list.
 
+<img src="docs/images/launcher.png" alt="VERA20K Launcher: campaign list, mission briefing and a rendered map preview" width="100%">
+
+> Selecting a Yuri's Revenge chapter: mission title, briefing text and the
+> engine-rendered map preview, with one-click launch.
+
 [中文说明](#中文说明)
 
 ---
