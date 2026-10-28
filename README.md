@@ -68,6 +68,29 @@ VERA20K_ROOT=/path/to/vera20k bash build.sh
 `build.sh` installs `VERA20K Launcher.app` into `/Applications` (pass a directory to
 change that). Without `VERA20K_ROOT` it looks for `../vera20k`.
 
+### Example: a mod pack that ships its own text and rules
+
+Overlay packs (a Chinese campaign pack, for instance) ship replacement
+`ra2md.csf`, `rulesmd.ini`, `artmd.ini`, an `expandmdNN.mix` and their own `*.map`
+files. Passing that folder as `--mod` does three things:
+
+```sh
+VERA20K_ROOT=/path/to/vera20k bash prepare_library.sh \
+    --yr  "/path/to/Yuris Revenge" \
+    --ra2 "/path/to/Red Alert 2" \
+    --mod "/path/to/lindlark3"          # the pack's folder
+```
+
+1. builds `base-mod/` — the YR clone plus the pack's files overriding them **by
+   name**, so `rulesmd.ini` and `ra2md.csf` come from the pack while everything
+   else still comes from your install;
+2. copies the pack's `*.map` files into `maps/` so they appear as a group;
+3. points the engine's `ra2_dir` at `base-mod/`, which is what removes the
+   `MISSING:'<key>'` placeholders in that pack's in-game messages.
+
+Your install is never modified: the overlay lives entirely in the library. Re-run
+the script whenever the game or the pack changes.
+
 ## The map library
 
 `prepare_library.sh` builds everything the launcher reads under

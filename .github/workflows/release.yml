@@ -1,0 +1,70 @@
+name: Release
+
+# Tag a commit (`git tag v0.1.0 && git push origin v0.1.0`) or run this by hand
+# with a tag name; the job builds the app and publishes it as a zip. The launcher
+# has no dependencies beyond the system frameworks, so the zip only contains the
+# bundle.
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to attach the build to (v0.1.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: release (macos)
+    runs-on: macos-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Stub map-tool
+        # The app records the tool path at build time; it is supplied by the
+        # user's vera20k checkout at run time, not bundled here.
+        run: |
+          mkdir -p "$RUNNER_TEMP/vera20k/target/release"
+          printf '#!/bin/sh\nexit 0\n' > "$RUNNER_TEMP/vera20k/target/release/map-tool"
+          chmod +x "$RUNNER_TEMP/vera20k/target/release/map-tool"
+
+      - name: Build the app
+        env:
+          VERA20K_ROOT: ${{ runner.temp }}/vera20k
+        run: bash build.sh "$RUNNER_TEMP/out"
+
+      - name: Verify and archive
+        id: package
+        run: |
+          set -euo pipefail
+          tag="${{ github.event.inputs.tag || github.ref_name }}"
+          app="$RUNNER_TEMP/out/VERA20K Launcher.app"
+          plutil -lint "$app/Contents/Info.plist"
+          codesign --verify --strict "$app"
+          name="VERA20K-Launcher-${tag}-macos-arm64"
+          mkdir -p dist
+          # ditto keeps the bundle's extended attributes and signature intact.
+          ditto -c -k --sequesterRsrc --keepParent "$app" "dist/${name}.zip"
+          echo "name=${name}" >> "$GITHUB_OUTPUT"
+          du -sh "dist/${name}.zip"
+
+      - name: Publish
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
+          name: VERA20K Launcher ${{ github.event.inputs.tag || github.ref_name }}
+          draft: true
+          files: dist/${{ steps.package.outputs.name }}.zip
+          body: |
+            VERA20K Launcher — a companion map browser for
+            [VERA20K](https://github.com/YuriPlanet/vera20k).
+
+            Unzip, move `VERA20K Launcher.app` to /Applications, then point it at
+            your retail installs with `prepare_library.sh` from the repository.
+            The app itself needs a built `map-tool` from a vera20k checkout.
