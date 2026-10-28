@@ -29,6 +29,8 @@ struct MapEntry: Identifiable, Hashable {
     var order: Int = 0
     /// Mission id from the map itself (RA2) or its section name (YR).
     var mission: String = ""
+    /// Which tables this row reads: `ra2`, `yr`, `mod` or `pack`.
+    var source: String = "mod"
     /// A MIX entry with no `[Basic] Name=` and no mission section: retail packs
     /// store these under hash ids only, so the list shows "map #<id>".
     var isUnnamedPackMap: Bool { pack != nil && (name.isEmpty || name.hasPrefix("map #")) }
@@ -68,7 +70,8 @@ func parsePackRows(_ text: String) -> [MapEntry] {
             theater: f[4],
             hasPreview: f[5] == "yes",
             starts: Int(f[6]) ?? 0,
-            pack: PackRef(archive: archive, id: id)
+            pack: PackRef(archive: archive, id: id),
+            source: "pack"
         ))
     }
     return entries
@@ -97,7 +100,8 @@ func parseToolRows(_ text: String) -> [MapEntry] {
             theater: f[4],
             hasPreview: f[5] == "yes",
             starts: Int(f[6]) ?? 0,
-            mission: f.count > 8 ? f[8] : ""
+            mission: f.count > 8 ? f[8] : "",
+            source: "mod"
         ))
     }
     return entries
@@ -116,6 +120,9 @@ final class Launcher: ObservableObject {
     /// Off by default: hash-named pack entries carry no title, so they only add
     /// noise to the list.
     @Published var showUnnamedPacks = UserDefaults.standard.bool(forKey: "showUnnamedPacks")
+    /// Off by default: the original RA2 chapters load but their mission scripts
+    /// do not run correctly under the YR-derived campaign state yet.
+    @Published var showRa2Chapters = UserDefaults.standard.bool(forKey: "showRa2Chapters")
     @Published var status = "Ready"
     @Published var roots: [String] = []
 
@@ -160,7 +167,8 @@ final class Launcher: ObservableObject {
         let name = entry.mission.isEmpty
             ? (entry.path as NSString).lastPathComponent
             : entry.mission
-        return previewDir + "/" + name.replacingOccurrences(of: "/", with: "_") + ".png"
+        return previewDir + "/" + entry.source + "_"
+            + name.replacingOccurrences(of: "/", with: "_") + ".png"
     }
     private var csfPath: String { libraryDir + "/meta/ra2md.csf" }
 
@@ -186,6 +194,7 @@ final class Launcher: ObservableObject {
         }
         return orderOf.keys
             .filter { !$0.hasPrefix("原版战役 · 训练") && !$0.hasPrefix("原版战役 · 其他") }
+            .filter { showRa2Chapters || !$0.hasPrefix("原版战役") }
             .sorted {
             let a = orderOf[$0] ?? 0, b = orderOf[$1] ?? 0
             return a == b ? $0 < $1 : a < b
@@ -292,7 +301,7 @@ final class Launcher: ObservableObject {
                         author: entry.author, width: entry.width, height: entry.height,
                         theater: entry.theater, hasPreview: entry.hasPreview,
                         starts: entry.starts, pack: nil, order: base * 100 + number,
-                        mission: mission
+                        mission: mission, source: "ra2"
                     )
                 }
                 self.merge(rows)
@@ -329,7 +338,8 @@ final class Launcher: ObservableObject {
                         hasPreview: entry.hasPreview,
                         starts: entry.starts,
                         pack: nil,
-                        order: order
+                        order: order,
+                        source: "yr"
                     )
                 }
                 self.merge(rows)
@@ -388,11 +398,12 @@ final class Launcher: ObservableObject {
         // parsing MISSIONMD.INI/CSF in the window.
         // The extracted Yuri's Revenge chapters must read the base game's tables;
         // the mod's CSF would overwrite their briefings with its own campaign.
-        let metadata: [String] = entry.group.hasPrefix("原版战役")
-            ? ["--csf", ra2Csf]
-            : entry.group.hasPrefix("尤里复仇战役")
-            ? ["--mission-ini", baseMissionIni, "--csf", baseCsf]
-            : missionArguments
+        let metadata: [String]
+        switch entry.source {
+        case "ra2": metadata = ["--csf", ra2Csf]
+        case "yr": metadata = ["--mission-ini", baseMissionIni, "--csf", baseCsf]
+        default: metadata = missionArguments
+        }
         runTool(["info", entry.path] + metadata) { [weak self] ok, text in
             guard let self else { return }
             if ok {
@@ -541,6 +552,11 @@ struct ContentView: View {
                         set: { launcher.showUnnamedPacks = $0 }
                     ))
                     .toggleStyle(.checkbox)
+                    Toggle("原版 RA2 战役（实验）", isOn: Binding(
+                        get: { launcher.showRa2Chapters },
+                        set: { launcher.showRa2Chapters = $0 }
+                    ))
+                    .toggleStyle(.checkbox)
                     Spacer()
                 }
                 .padding(6)
@@ -578,6 +594,12 @@ struct ContentView: View {
                             Text("任务简报").font(.headline)
                             Text(launcher.briefing)
                                 .font(.system(size: 12))
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        if entry.source == "ra2" {
+                            Text("实验性：原版 RA2 战役在 YR 状态下尚不能正确运行（过场与任务脚本不匹配），启动可能立刻失败。")
+                                .font(.system(size: 11))
+                                .foregroundStyle(.orange)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
                         if launcher.preview == nil, !launcher.generatingPreview {
