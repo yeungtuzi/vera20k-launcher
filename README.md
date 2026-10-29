@@ -134,6 +134,19 @@ the radar terrain surface (the in-game minimap source) and the launcher stops th
 game. No reveal cheats and no screenshot stitching are involved. The cost is one
 game launch per map, which is why previews are cached.
 
+Each launch gets a private directory under `VERA20K-Maps/…/runs/<hash>/` holding
+its own `spawn.ini` and a copy of the map, and two process-scoped overrides keep
+it isolated:
+
+| Variable | Effect |
+|---|---|
+| `RA2_DIR` | overrides `paths.ra2_dir` for that process only |
+| `RA2_SPAWN_INI` | names the launch file `-SPAWN` should read |
+
+No shared file is rewritten, so a direct launch (or the retail app) always sees
+the pristine install, and a campaign pack that reuses `all01umd.map` can no
+longer shadow the official chapter of the same name.
+
 ## Ordering and naming
 
 1. Original Red Alert 2 chapters (Allied, then Soviet), by mission number.
@@ -151,6 +164,8 @@ Maps are deduplicated by mission id: retail ships each chapter twice (in
   them unless the pack is a named custom one.
 - The training chapters are hidden: all nine maps carry the same `Brief:TRN01`
   key, so they cannot be told apart.
+- Save games record the scenario name, so a save from a custom map needs that
+  map on disk when you load it.
 - Windows and Linux would need their own window layer; this app is macOS only.
 
 ## License

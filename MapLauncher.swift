@@ -486,7 +486,14 @@ final class Launcher: ObservableObject {
 
     private func start(mapPath: String, name: String) {
         var arguments = ["launch", mapPath, "--data-dir", dataDir]
-        if let entry = selected { arguments += ["--ra2-dir", assetRoot(for: entry)] }
+        if let entry = selected {
+            arguments += ["--ra2-dir", assetRoot(for: entry)]
+            // A mod map can reuse an official file name (`all01umd.map`); staged
+            // under that name it would shadow the official chapter forever after.
+            // Each launch gets its own directory now, so the map keeps its real
+            // name and mission text lookups still match.
+
+        }
         if fullscreen { arguments.append("--fullscreen") }
         runTool(arguments) { [weak self] ok, text in
             self?.status = ok ? "Started: \(name)" : "launch failed: \(text)"
