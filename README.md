@@ -168,6 +168,38 @@ Maps are deduplicated by mission id: retail ships each chapter twice (in
   map on disk when you load it.
 - Windows and Linux would need their own window layer; this app is macOS only.
 
+## Notes for the engine upstream
+
+This launcher is deliberately external: it parses the same data the game does and
+never forks the renderer. Three observations from building it that may be useful
+to VERA20K itself:
+
+1. **Browsing maps needs no engine change.** Map lists, mission titles, briefings,
+   previews and launches can all be produced from the existing data by a tool that
+   loads `MapFile` and reads the MIX archives.
+2. **A map without `[PreviewPack]` already has a free preview.** The engine builds
+   a whole-map, CPU-side, shroud-free radar terrain buffer for the in-game
+   minimap; dumping that buffer once as a PNG is a real preview. No reveal cheat,
+   no screenshot stitching.
+3. **Per-process overrides are what make external tooling safe.** The launch file
+   is read from the working directory and the asset root from shared config, so a
+   tool either mutates shared state or copies files into the game data directory.
+   Two process-scoped overrides — asset root and launch-file path — remove both
+   needs: `config.toml` stays untouched and a direct launch always sees the
+   pristine install.
+
+Pitfalls found the hard way, worth knowing before writing such a tool:
+
+| Symptom | Cause |
+|---|---|
+| Official chapters show a mod's text | the mod overlay's `ra2md.csf` replaces the official mission text too |
+| A third-party map shadows the official one | the pack reuses `all01umd.map`; a staged copy in the data directory wins |
+| Save games fail with a TMP/variant error | the save records the scenario name but not the asset root; the wrong root or a shadowed map makes the terrain variant sets disagree, and the error names unrelated numbers |
+
+In one line: a map launcher does not need the engine's asset system rewritten, it
+needs the engine to allow naming the asset root and the launch file per process.
+Everything else belongs to the tool.
+
 ## License
 
 GPL-3.0, matching VERA20K — see [LICENSE](LICENSE). The app icon is composed from
